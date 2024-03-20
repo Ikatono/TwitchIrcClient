@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Reflection.Metadata;
 using System.Security.Cryptography;
@@ -17,10 +18,7 @@ namespace TwitchLogger.IRC
 {
     /// <summary>
     /// Connects to a single Twitch chat channel via limited IRC implementation.
-    /// 
     /// </summary>
-    /// <param name="url"></param>
-    /// <param name="port"></param>
     public class IrcConnection : IDisposable
     {
         public static readonly string ENDL = "\r\n";
@@ -28,6 +26,7 @@ namespace TwitchLogger.IRC
         public string Url { get; }
         public bool Connected { get; } = false;
         public bool TrackUsers { get; }
+        public bool UsesSsl { get; }
         //this seems to be the only concurrentcollection that allows
         //removing specific items
         protected ConcurrentDictionary<string, byte> UserCollection = new();
@@ -42,7 +41,8 @@ namespace TwitchLogger.IRC
         public event EventHandler<UserChangeEventArgs>? onUserChange;
 
         private TcpClient Client = new();
-        private NetworkStream Stream => Client.GetStream();
+        //private NetworkStream Stream => Client.GetStream();
+        private Stream _Stream;
         private CancellationTokenSource TokenSource = new();
         //it looks like you can't get the Token after the Source is disposed
         protected CancellationToken Token;
@@ -51,12 +51,13 @@ namespace TwitchLogger.IRC
         private Task? UserUpdateTask;
 
         public IrcConnection(string url, int port,
-            RateLimiter? limiter = null, bool trackUsers = false)
+            RateLimiter? limiter = null, bool trackUsers = false, bool useSsl = false)
         {
             Url = url;
             Port = port;
             Limiter = limiter;
             TrackUsers = trackUsers;
+            UsesSsl = useSsl;
             Token = TokenSource.Token;
             if (TrackUsers)
             {
@@ -99,6 +100,16 @@ namespace TwitchLogger.IRC
             await Client.ConnectAsync(Url, Port);
             if (!Client.Connected)
                 return false;
+            if (UsesSsl)
+            {
+                var stream = new SslStream(Client.GetStream());
+                await stream.AuthenticateAsClientAsync(Url);
+                _Stream = stream;
+            }
+            else
+            {
+                _Stream = Client.GetStream();
+            }
             ListenerTask = Task.Run(ListenForInput, Token);
             UserUpdateTask = Task.Run(UpdateUsers, Token);
             return true;
@@ -112,7 +123,8 @@ namespace TwitchLogger.IRC
             Limiter?.WaitForAvailable(Token);
             if (Token.IsCancellationRequested)
                 return;
-            Stream.Write(new Span<byte>(Encoding.UTF8.GetBytes(line + ENDL)));
+            var bytes = Encoding.UTF8.GetBytes(line + ENDL);
+            _Stream.Write(bytes, 0, bytes.Length);
         }
         public void Authenticate(string? user, string? pass)
         {
@@ -134,17 +146,17 @@ namespace TwitchLogger.IRC
             byte[] buffer = new byte[5 * 1024];
             while (!Token.IsCancellationRequested)
             {
-                var bytesRead = await Stream.ReadAsync(buffer, 0, buffer.Length, Token);
+                var bytesRead = await _Stream.ReadAsync(buffer, Token);
                 if (bytesRead > 0)
                     onDataReceived(buffer, bytesRead);
-                if (!Stream.CanRead)
+                if (!_Stream.CanRead)
                     return;
             }
             Token.ThrowIfCancellationRequested();
         }
 
-        ConcurrentBag<string> _JoinedUsers = [];
-        ConcurrentBag<string> _LeftUsers = [];
+        private readonly ConcurrentBag<string> _JoinedUsers = [];
+        private readonly ConcurrentBag<string> _LeftUsers = [];
         private void UserJoin(Join message)
         {
             _JoinedUsers.Add(message.Username);
