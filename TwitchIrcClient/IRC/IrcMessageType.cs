@@ -30,7 +30,6 @@ namespace TwitchLogger.IRC
         CAP         = -2000,
 
         #region Numeric
-        //none of these are actually Twitch supported other than 421
         RPL_WELCOME         = 001,
         RPL_YOURHOST        = 002,
         RPL_CREATED         = 003,
@@ -88,9 +87,16 @@ namespace TwitchLogger.IRC
         RPL_ENDOFEXCEPTLIST = 349,
         RPL_VERSION         = 351,
         RPL_WHOREPLY        = 352,
+        /// <summary>
+        /// Twitch seems to send this when you join a channel to list the users present
+        /// (even if documentation says it doesn't)
+        /// </summary>
         RPL_NAMREPLY        = 353,
         RPL_LINKS           = 364,
         RPL_ENDOFLINKS      = 365,
+        /// <summary>
+        /// Sent after a series of 353.
+        /// </summary>
         RPL_ENDOFNAMES      = 366,
         RPL_BANLIST         = 367,
         RPL_ENDOFBANLIST    = 368,
@@ -116,6 +122,9 @@ namespace TwitchLogger.IRC
         ERR_NORECIPIENT     = 411,
         ERR_NOTEXTTOSEND    = 412,
         ERR_INPUTTOOLONG    = 417,
+        /// <summary>
+        /// Twitch should send this if you try using an unsupported command
+        /// </summary>
         ERR_UNKNOWNCOMMAND  = 421,
         ERR_NOMOTD          = 422,
         ERR_NONICKNAMEGIVEN = 431,
@@ -163,7 +172,7 @@ namespace TwitchLogger.IRC
         ERR_SASLMECHS       = 908,
         #endregion //Numeric
     }
-    public static class IrcReceiveMessageTypeHelper
+    public static class IrcMessageTypeHelper
     {
         //parses a string that is either a numeric code or the command name
         public static IrcMessageType Parse(string s)

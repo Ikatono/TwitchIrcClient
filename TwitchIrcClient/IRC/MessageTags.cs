@@ -37,7 +37,7 @@ namespace TwitchLogger.IRC
         /// <returns></returns>
         public static MessageTags Parse(string s)
         {
-            s.TrimStart('@');
+            s = s.TrimStart('@');
             MessageTags tags = [];
             string key = "";
             string value = "";
