@@ -11,7 +11,7 @@ namespace TwitchLogger.IRC
     //{
     //    public ReceivedMessage Message = message;
     //}
-    public delegate void MessageCallback(ReceivedMessage message);
+    public delegate void MessageCallback(IrcConnection origin, ReceivedMessage message);
     /// <summary>
     /// Callback to be run for received messages of specific types.
     /// </summary>
@@ -21,11 +21,11 @@ namespace TwitchLogger.IRC
         MessageCallback Callback,
         IReadOnlyList<IrcMessageType>? CallbackTypes)
     {
-        public bool TryCall(ReceivedMessage message)
+        public bool TryCall(IrcConnection origin, ReceivedMessage message)
         {
             if (CallbackTypes?.Contains(message.MessageType) ?? true)
             {
-                Callback(message);
+                Callback(origin, message);
                 return true;
             }
             return false;

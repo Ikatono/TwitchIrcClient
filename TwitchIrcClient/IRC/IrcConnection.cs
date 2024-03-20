@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using TwitchIrcClient.IRC.Messages;
 using TwitchLogger.IRC.Messages;
 
 namespace TwitchLogger.IRC
@@ -27,6 +28,15 @@ namespace TwitchLogger.IRC
         public bool Connected { get; } = false;
         public bool TrackUsers { get; }
         public bool UsesSsl { get; }
+        private Roomstate? _LastRoomstate;
+        public Roomstate? LastRoomstate
+        { get
+            {
+                if (_LastRoomstate == null)
+                    return null;
+                return new Roomstate(_LastRoomstate);
+            }
+        }
         //this seems to be the only concurrentcollection that allows
         //removing specific items
         protected ConcurrentDictionary<string, byte> UserCollection = new();
@@ -61,35 +71,38 @@ namespace TwitchLogger.IRC
             Token = TokenSource.Token;
             if (TrackUsers)
             {
-                AddSystemCallback(new MessageCallbackItem(m =>
+                AddSystemCallback(new MessageCallbackItem((o, m) =>
                 {
                     if (m is NamReply nr)
                         foreach (var u in nr.Users)
-                            UserCollection.TryAdd(u, 0);
+                            o.UserCollection.TryAdd(u, 0);
                     else
                         throw new ArgumentException(null, nameof(m));
                 }, [IrcMessageType.RPL_NAMREPLY]));
-                AddSystemCallback(new MessageCallbackItem(m =>
+                AddSystemCallback(new MessageCallbackItem((o, m) =>
                 {
                     if (m is Join j)
                     {
-                        UserCollection.TryAdd(j.Username, 0);
-                        UserJoin(j);
+                        o.UserCollection.TryAdd(j.Username, 0);
+                        o.UserJoin(j);
                     }
                     else
                         throw new ArgumentException(null, nameof(m));
                 }, [IrcMessageType.JOIN]));
-                AddSystemCallback(new MessageCallbackItem(m =>
+                AddSystemCallback(new MessageCallbackItem((o, m) =>
                 {
                     if (m is Part j)
                     {
-                        UserCollection.TryRemove(j.Username, out _);
-                        UserLeave(j);
+                        o.UserCollection.TryRemove(j.Username, out _);
+                        o.UserLeave(j);
                     }
                     else
                         throw new ArgumentException(null, nameof(m));
                 }, [IrcMessageType.PART]));
             }
+            AddSystemCallback(new MessageCallbackItem(
+                (o, m) => { o._LastRoomstate = new Roomstate(m); },
+                [IrcMessageType.ROOMSTATE]));
         }
 
         public async Task<bool> ConnectAsync()
@@ -277,8 +290,8 @@ namespace TwitchLogger.IRC
             ArgumentNullException.ThrowIfNull(message, nameof(message));
                 if (disposedValue)
                 return;
-            SystemCallbacks.ForEach(c => c.TryCall(message));
-            UserCallbacks.ForEach(c => c.TryCall(message));
+            SystemCallbacks.ForEach(c => c.TryCall(this, message));
+            UserCallbacks.ForEach(c => c.TryCall(this, message));
         }
 
         #region Dispose
