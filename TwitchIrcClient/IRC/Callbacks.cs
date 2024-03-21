@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TwitchLogger.IRC.Messages;
+using TwitchIrcClient.IRC.Messages;
 
-namespace TwitchLogger.IRC
+namespace TwitchIrcClient.IRC
 {
     //public class IrcMessageEventArgs(ReceivedMessage message) : EventArgs
     //{

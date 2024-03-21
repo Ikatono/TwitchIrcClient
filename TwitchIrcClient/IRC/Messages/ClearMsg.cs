@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TwitchLogger.IRC.Messages
+namespace TwitchIrcClient.IRC.Messages
 {
     /// <summary>
     /// Indicates that a message was deleted.
@@ -34,7 +34,7 @@ namespace TwitchLogger.IRC.Messages
                 string s = TryGetTag("tmi-sent-ts");
                 if (!double.TryParse(s, out double d))
                     return null;
-                return DateTime.UnixEpoch.AddSeconds(d);
+                return DateTime.UnixEpoch.AddSeconds(d / 1000);
             } 
         }
         public ClearMsg(ReceivedMessage message) : base(message)

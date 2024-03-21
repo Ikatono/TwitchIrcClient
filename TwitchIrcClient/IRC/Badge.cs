@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TwitchLogger.IRC
+namespace TwitchIrcClient.IRC
 {
     public record struct Badge(string Name, string Version)
     {

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TwitchLogger.IRC
+namespace TwitchIrcClient.IRC
 {
     public enum IrcMessageType
     {

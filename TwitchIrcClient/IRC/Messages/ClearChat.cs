@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TwitchLogger.IRC.Messages
+namespace TwitchIrcClient.IRC.Messages
 {
     public class ClearChat : ReceivedMessage
     {

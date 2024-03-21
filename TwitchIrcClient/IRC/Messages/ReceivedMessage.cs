@@ -6,7 +6,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TwitchLogger.IRC.Messages
+namespace TwitchIrcClient.IRC.Messages
 {
     /// <summary>
     /// 
@@ -109,6 +109,8 @@ namespace TwitchLogger.IRC.Messages
                     return new Part(message);
                 case IrcMessageType.RPL_NAMREPLY:
                     return new NamReply(message);
+                case IrcMessageType.ROOMSTATE:
+                    return new Roomstate(message);
                 default:
                     return message;
             }

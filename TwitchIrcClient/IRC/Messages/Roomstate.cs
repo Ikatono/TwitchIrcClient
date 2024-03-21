@@ -6,8 +6,8 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
-using TwitchLogger.IRC;
-using TwitchLogger.IRC.Messages;
+using TwitchIrcClient.IRC;
+using TwitchIrcClient.IRC.Messages;
 
 namespace TwitchIrcClient.IRC.Messages
 {
@@ -86,6 +86,10 @@ namespace TwitchIrcClient.IRC.Messages
                 throw new InvalidDataException($"tag \"subs-only\" does not have a proper value: {value}");
             }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string ChannelName => Parameters.Last().TrimStart('#');
         public Roomstate(ReceivedMessage other) : base(other)
         {
             Debug.Assert(MessageType == IrcMessageType.ROOMSTATE,

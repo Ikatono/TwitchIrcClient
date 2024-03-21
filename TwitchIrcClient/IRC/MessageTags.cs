@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TwitchLogger.IRC
+namespace TwitchIrcClient.IRC
 {
     /// <summary>
     /// Holds key-value pairs of tags. Tag names are case-sensitive and DO NOT parse

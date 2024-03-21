@@ -7,7 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace TwitchLogger.IRC.Messages
+namespace TwitchIrcClient.IRC.Messages
 {
     /// <summary>
     /// 
@@ -109,6 +109,15 @@ namespace TwitchLogger.IRC.Messages
                 return value == "1";
             }
         }
+        public DateTime Timestamp
+        { get
+            {
+                var s = TryGetTag("tmi-sent-ts");
+                if (!double.TryParse(s, out double result))
+                    throw new InvalidDataException();
+                return DateTime.UnixEpoch.AddSeconds(result / 1000);
+            }
+        }
         /// <summary>
         /// A Boolean value that indicates whether the user has site-wide commercial
         /// free mode enabled
@@ -157,6 +166,7 @@ namespace TwitchLogger.IRC.Messages
         /// A Boolean value that determines whether the user that sent the chat is a VIP.
         /// </summary>
         public bool Vip => MessageTags.ContainsKey("vip");
+        public bool FirstMessage => TryGetTag("first-msg") == "1";
         public string ChatMessage => Parameters.Last();
         public Privmsg(ReceivedMessage message) : base(message)
         {

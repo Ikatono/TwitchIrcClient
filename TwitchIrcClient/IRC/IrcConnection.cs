@@ -13,9 +13,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using TwitchIrcClient.IRC.Messages;
-using TwitchLogger.IRC.Messages;
+using TwitchIrcClient.IRC.Messages;
 
-namespace TwitchLogger.IRC
+namespace TwitchIrcClient.IRC
 {
     /// <summary>
     /// Connects to a single Twitch chat channel via limited IRC implementation.

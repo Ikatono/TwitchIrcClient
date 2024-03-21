@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TwitchLogger.IRC
+namespace TwitchIrcClient.IRC
 {
     /// <summary>
     /// Prevents sending too many messages in a time period. A single rate limiter can

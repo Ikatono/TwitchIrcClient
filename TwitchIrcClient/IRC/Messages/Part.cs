@@ -5,11 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TwitchLogger.IRC.Messages
+namespace TwitchIrcClient.IRC.Messages
 {
     public class Part : ReceivedMessage
     {
         public string Username => Prefix?.Split('!', 2).First() ?? "";
+        public string ChannelName => Parameters.Single().TrimStart('#');
         public Part(ReceivedMessage message) : base(message)
         {
             Debug.Assert(MessageType == IrcMessageType.PART,
