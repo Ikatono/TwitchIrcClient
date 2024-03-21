@@ -29,28 +29,35 @@ namespace TwitchIrcClient.IRC
             Timer.Start();
         }
 
-        public void WaitForAvailable(CancellationToken? token = null)
+        public bool WaitForAvailable(CancellationToken? token = null)
         {
             try
             {
-                if (token is CancellationToken actualToken)
-                    Semaphore.Wait(actualToken);
-                else
-                    Semaphore.Wait();
+                lock (Semaphore)
+                {
+                    if (token is CancellationToken actualToken)
+                        Semaphore.Wait(actualToken);
+                    else
+                        Semaphore.Wait();
+                    return true;
+                }
             }
             catch (OperationCanceledException)
             {
-                //caller is responsible for checking whether connection is cancelled before trying to send
+                return false;
             }
         }
         public bool WaitForAvailable(TimeSpan timeout, CancellationToken? token = null)
         {
             try
             {
-                if (token is CancellationToken actualToken)
-                    return Semaphore.Wait(timeout, actualToken);
-                else
-                    return Semaphore.Wait(timeout);
+                lock (Semaphore)
+                {
+                    if (token is CancellationToken actualToken)
+                        return Semaphore.Wait(timeout, actualToken);
+                    else
+                        return Semaphore.Wait(timeout);
+                }
             }
             catch (OperationCanceledException)
             {
@@ -61,10 +68,13 @@ namespace TwitchIrcClient.IRC
         {
             try
             {
-                if (token is CancellationToken actualToken)
-                    return Semaphore.Wait(millis, actualToken);
-                else
-                    return Semaphore.Wait(millis);
+                lock (Semaphore)
+                {
+                    if (token is CancellationToken actualToken)
+                        return Semaphore.Wait(millis, actualToken);
+                    else
+                        return Semaphore.Wait(millis);
+                }
             }
             catch (OperationCanceledException)
             {
@@ -76,16 +86,13 @@ namespace TwitchIrcClient.IRC
         {
             try
             {
-                Semaphore.Release(MessageLimit);
+                lock (Semaphore)
+                {
+                    Semaphore.Release(MessageLimit - Semaphore.CurrentCount);
+                }
             }
-            catch (SemaphoreFullException)
-            {
-
-            }
-            catch (ObjectDisposedException)
-            {
-
-            }
+            catch (SemaphoreFullException)  { }
+            catch (ObjectDisposedException) { }
         }
 
         #region RateLimiter Dispose
