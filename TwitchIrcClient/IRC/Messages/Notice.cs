@@ -15,16 +15,6 @@ namespace TwitchIrcClient.IRC.Messages
         /// </summary>
         public NoticeId? MessageId => Enum.TryParse(TryGetTag("msg-id"), out NoticeId value)
             ? value : null;
-        //{ get
-        //    {
-        //        string spaced = TryGetTag("msg-id").Replace('_', ' ');
-        //        string title = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(spaced);
-        //        string pascal = title.Replace(" ", "");
-        //        if (!Enum.TryParse(pascal, out NoticeId value))
-        //            return null;
-        //        return value;
-        //    }
-        //}
         public string TargetUserId => TryGetTag("target-user-id");
 
         public Notice(ReceivedMessage message) : base(message)

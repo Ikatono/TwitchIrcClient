@@ -82,12 +82,13 @@ namespace TwitchIrcClient.IRC.Messages
                 //is stripped
                 if (s.StartsWith(':'))
                 {
-                    message.Parameters.Add(s.Substring(1));
+                    message.Parameters.Add(s[1..]);
                 }
                 else
                 {
                     var spl_final = s.Split(" :", 2);
-                    var spl_initial = spl_final[0].Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    var spl_initial = spl_final[0].Split(' ', StringSplitOptions.RemoveEmptyEntries
+                        | StringSplitOptions.TrimEntries);
                     message.Parameters.AddRange(spl_initial);
                     if (spl_final.Length >= 2)
                         message.Parameters.Add(spl_final[1]);
