@@ -30,13 +30,13 @@ namespace TwitchIrcClient.IRC.Messages
         /// The ID of the user that was banned or put in a timeout.
         /// </summary>
         public string TargetUserId => TryGetTag("target-user-id");
-        public DateTime? TmiSentTime
+        public DateTime? Timestamp
         { get
             {
                 string s = TryGetTag("tmi-sent-ts");
                 if (!double.TryParse(s, out double d))
                     return null;
-                return DateTime.UnixEpoch.AddSeconds(d);
+                return DateTime.UnixEpoch.AddMilliseconds(d);
             }
         }
         /// <summary>
@@ -52,12 +52,12 @@ namespace TwitchIrcClient.IRC.Messages
         /// <summary>
         /// The name of the channel that either was cleared or banned the user
         /// </summary>
-        public string Channel => Parameters.First();
+        public string Channel => Parameters.First().TrimStart('#');
         /// <summary>
         /// The username of the banned user, or "" if message is a
         /// channel clear.
         /// </summary>
-        public string User => Parameters.ElementAtOrDefault(2) ?? "";
+        public string User => Parameters.ElementAtOrDefault(1) ?? "";
         public ClearChat(ReceivedMessage message) : base(message)
         {
             Debug.Assert(MessageType == IrcMessageType.CLEARCHAT,

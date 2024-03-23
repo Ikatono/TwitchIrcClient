@@ -94,27 +94,23 @@ namespace TwitchIrcClient.IRC.Messages
                         message.Parameters.Add(spl_final[1]);
                 }
             }
-            switch (message.MessageType)
+            return message.MessageType switch
             {
-                case IrcMessageType.PRIVMSG:
-                    return new Privmsg(message);
-                case IrcMessageType.CLEARCHAT:
-                    return new ClearChat(message);
-                case IrcMessageType.CLEARMSG:
-                    return new ClearMsg(message);
-                case IrcMessageType.NOTICE:
-                    return new Notice(message);
-                case IrcMessageType.JOIN:
-                    return new Join(message);
-                case IrcMessageType.PART:
-                    return new Part(message);
-                case IrcMessageType.RPL_NAMREPLY:
-                    return new NamReply(message);
-                case IrcMessageType.ROOMSTATE:
-                    return new Roomstate(message);
-                default:
-                    return message;
-            }
+                IrcMessageType.CLEARCHAT => new ClearChat(message),
+                IrcMessageType.CLEARMSG => new ClearMsg(message),
+                IrcMessageType.JOIN => new Join(message),
+                IrcMessageType.GLOBALUSERSTATE => new GlobalUserState(message),
+                IrcMessageType.HOSTTARGET => new HostTarget(message),
+                IrcMessageType.NOTICE => new Notice(message),
+                IrcMessageType.PART => new Part(message),
+                IrcMessageType.PRIVMSG => new Privmsg(message),
+                IrcMessageType.ROOMSTATE => new Roomstate(message),
+                IrcMessageType.RPL_NAMREPLY => new NamReply(message),
+                IrcMessageType.USERNOTICE => new UserNotice(message),
+                IrcMessageType.USERSTATE => new UserState(message),
+                IrcMessageType.WHISPER => new Whisper(message),
+                _ => message,
+            };
         }
         /// <summary>
         /// Tries to get the value of the tag.

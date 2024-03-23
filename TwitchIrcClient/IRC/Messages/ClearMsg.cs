@@ -28,7 +28,7 @@ namespace TwitchIrcClient.IRC.Messages
         /// <summary>
         /// 
         /// </summary>
-        public DateTime? TmiSentTime
+        public DateTime? Timestamp
         { get
             {
                 string s = TryGetTag("tmi-sent-ts");
@@ -37,6 +37,8 @@ namespace TwitchIrcClient.IRC.Messages
                 return DateTime.UnixEpoch.AddSeconds(d / 1000);
             } 
         }
+        public string Channel => Parameters.FirstOrDefault("").TrimStart('#');
+        public string Message => Parameters.LastOrDefault("");
         public ClearMsg(ReceivedMessage message) : base(message)
         {
             Debug.Assert(MessageType == IrcMessageType.CLEARMSG,

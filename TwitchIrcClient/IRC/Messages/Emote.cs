@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TwitchIrcClient.IRC.Messages
 {
-    public record struct Emote(string Name, int Length)
+    public record struct Emote(string Name, int Position, int Length)
     {
         
     }

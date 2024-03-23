@@ -4,22 +4,19 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace TwitchIrcClient.IRC.Messages
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    public class Privmsg : ReceivedMessage
+    public class Whisper : ReceivedMessage
     {
+
         /// <summary>
         /// List of chat badges. Most badges have only 1 version, but some badges like
         /// subscriber badges offer different versions of the badge depending on how
         /// long the user has subscribed. To get the badge, use the Get Global Chat
         /// Badges and Get Channel Chat Badges APIs. Match the badge to the set-id field’s
-        /// value in the response. Then, match the version to the id field in the list of versions.
+        /// value in the response.Then, match the version to the id field in the list of versions.
         /// </summary>
         public List<Badge> Badges
         { get
@@ -35,19 +32,6 @@ namespace TwitchIrcClient.IRC.Messages
                     badges.Add(new Badge(spl[0], spl[1]));
                 }
                 return badges;
-            }
-        }
-        /// <summary>
-        /// The amount of bits cheered. Equals 0 if message did not contain a cheer.
-        /// </summary>
-        public int Bits
-        { get
-            {
-                if (!MessageTags.TryGetValue("bits", out string? value))
-                    return 0;
-                if (!int.TryParse(value, out int bits))
-                    return 0;
-                return bits;
             }
         }
         /// <summary>
@@ -100,44 +84,14 @@ namespace TwitchIrcClient.IRC.Messages
             }
         }
         /// <summary>
-        /// An ID that uniquely identifies the message.
+        /// An ID that uniquely identifies the whisper message.
         /// </summary>
-        public string Id => TryGetTag("id");
+        public string MessageId => TryGetTag("message-id");
         /// <summary>
-        /// Whether the user is a moderator in this channel
+        /// An ID that uniquely identifies the whisper thread.
+        /// The ID is in the form, <smaller-value-user-id>_<larger-value-user-id>.
         /// </summary>
-        public bool Moderator
-        { get
-            {
-                if (!MessageTags.TryGetValue("mod", out string? value))
-                    return false;
-                return value == "1";
-            }
-        }
-        /// <summary>
-        /// An ID that identifies the chat room (channel).
-        /// </summary>
-        public string RoomId => TryGetTag("room-id");
-        /// <summary>
-        /// Whether the user is subscribed to the channel
-        /// </summary>
-        public bool Subscriber
-        { get
-            {
-                if (!MessageTags.TryGetValue("subscriber", out string? value))
-                    return false;
-                return value == "1";
-            }
-        }
-        public DateTime Timestamp
-        { get
-            {
-                var s = TryGetTag("tmi-sent-ts");
-                if (!double.TryParse(s, out double result))
-                    throw new InvalidDataException();
-                return DateTime.UnixEpoch.AddSeconds(result / 1000);
-            }
-        }
+        public string ThreadId => TryGetTag("thread-id");
         /// <summary>
         /// A Boolean value that indicates whether the user has site-wide commercial
         /// free mode enabled
@@ -151,16 +105,10 @@ namespace TwitchIrcClient.IRC.Messages
             }
         }
         /// <summary>
-        /// The user’s ID
+        /// The ID of the user sending the whisper message.
         /// </summary>
-        public string UserId
-        { get
-            {
-                if (!MessageTags.TryGetValue("user-id", out string? value))
-                    return "";
-                return value ?? "";
-            }
-        }
+        public string UserId => TryGetTag("user-id");
+        public string Message => Parameters.LastOrDefault("");
         /// <summary>
         /// The type of the user. Assumes a normal user if this is not provided or is invalid.
         /// </summary>
@@ -182,64 +130,10 @@ namespace TwitchIrcClient.IRC.Messages
                 }
             }
         }
-        /// <summary>
-        /// A Boolean value that determines whether the user that sent the chat is a VIP.
-        /// </summary>
-        public bool Vip => MessageTags.ContainsKey("vip");
-        /// <summary>
-        /// The level of the Hype Chat. Proper values are 1-10, or 0 if not a Hype Chat.
-        /// </summary>
-        public int HypeChatLevel
-        { get
-            {
-                var value = TryGetTag("pinned-chat-paid-level");
-                switch (value.ToUpper())
-                {
-                    case "ONE":
-                        return 1;
-                    case "TWO":
-                        return 2;
-                    case "THREE":
-                        return 3;
-                    case "FOUR":
-                        return 4;
-                    case "FIVE":
-                        return 5;
-                    case "SIX":
-                        return 6;
-                    case "SEVEN":
-                        return 7;
-                    case "EIGHT":
-                        return 8;
-                    case "NINE":
-                        return 9;
-                    case "TEN":
-                        return 10;
-                    default:
-                        return 0;
-                }
-            }
-        }
-        /// <summary>
-        /// The ISO 4217 alphabetic currency code the user has sent the Hype Chat in.
-        /// </summary>
-        public string HypeChatCurrency => TryGetTag("pinned-chat-paid-currency");
-        public decimal? HypeChatValue
-        { get
-            {
-                var numeric = TryGetTag("pinned-chat-paid-amount");
-                var exp = TryGetTag("pinned-chat-paid-exponent");
-                if (int.TryParse(numeric, out int d_numeric) && int.TryParse(exp, out int d_exp))
-                    return d_numeric / ((decimal)Math.Pow(10, d_exp));
-                return null;
-            }
-        }
-        public bool FirstMessage => TryGetTag("first-msg") == "1";
-        public string ChatMessage => Parameters.Last();
-        public Privmsg(ReceivedMessage message) : base(message)
+        public Whisper(ReceivedMessage other) : base(other)
         {
-            Debug.Assert(MessageType == IrcMessageType.PRIVMSG,
-                $"{nameof(Privmsg)} must have type {IrcMessageType.PRIVMSG}" +
+            Debug.Assert(MessageType == IrcMessageType.WHISPER,
+                $"{nameof(Whisper)} must have type {IrcMessageType.WHISPER}" +
                 $" but has {MessageType}");
         }
     }

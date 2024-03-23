@@ -1,12 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Numerics;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using static System.Net.Mime.MediaTypeNames;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TwitchIrcClient.IRC.Messages
 {
@@ -16,7 +23,7 @@ namespace TwitchIrcClient.IRC.Messages
         /// List of chat badges. Most badges have only 1 version, but some badges like
         /// subscriber badges offer different versions of the badge depending on how
         /// long the user has subscribed. To get the badge, use the Get Global Chat
-        /// Badges and Get Channel Chat Badges APIs.Match the badge to the set-id field’s
+        /// Badges and Get Channel Chat Badges APIs. Match the badge to the set-id field’s
         /// value in the response.Then, match the version to the id field in the list of versions.
         /// </summary>
         public List<Badge> Badges
@@ -52,6 +59,8 @@ namespace TwitchIrcClient.IRC.Messages
                 return System.Drawing.Color.FromArgb(r, g, b);
             }
         }
+        public string Channel => Parameters.FirstOrDefault("").TrimStart('#');
+        public string Message => Parameters.ElementAtOrDefault(1) ?? "";
         /// <summary>
         /// The user’s display name. This tag may be empty if it is never set.
         /// </summary>
@@ -63,12 +72,23 @@ namespace TwitchIrcClient.IRC.Messages
                 return value ?? "";
             }
         }
+        public IEnumerable<Emote> Emotes
+        { get
+            {
+                throw new NotImplementedException();
+
+            }
+        }
         /// <summary>
         /// An ID that uniquely identifies the message.
         /// </summary>
         public string Id => TryGetTag("id");
         public UserNoticeType? UserNoticeType => Enum.TryParse(TryGetTag("msg-id"), out UserNoticeType type)
             ? type : null;
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Login => TryGetTag("login");
         /// <summary>
         /// Whether the user is a moderator in this channel
         /// </summary>
@@ -118,24 +138,166 @@ namespace TwitchIrcClient.IRC.Messages
                 return value ?? "";
             }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string SystemMessage => TryGetTag("system-msg");
+        /// <summary>
+        /// When the Twitch IRC server received the message
+        /// </summary>
+        public DateTime Timestamp
+        { get
+            {
+                if (double.TryParse(TryGetTag("tmi-sent-ts"), out double value))
+                    return DateTime.UnixEpoch.AddMilliseconds(value);
+                throw new InvalidDataException();
+            }
+        }
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.raid"/> notices.
+        /// The display name of the broadcaster raiding this channel.
+        /// </summary>
+        public string RaidingChannelDisplayName => TryGetTag("msg-param-displayName");
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.raid"/> notices.
+        /// The login name of the broadcaster raiding this channel.
+        /// </summary>
+        public string RaidingChannelLogin => TryGetTag("msg-param-login");
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.anongiftpaidupgrade"/> and <see cref="UserNoticeType.giftpaidupgrade"/> notices.
+        /// The subscriptions promo, if any, that is ongoing (for example, Subtember 2018).
+        /// </summary>
+        public string SubscriptionPromoName => TryGetTag("msg-param-promo-name");
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.anongiftpaidupgrade"/> and
+        /// <see cref="UserNoticeType.giftpaidupgrade"/> notices.
+        /// The number of gifts the gifter has given during the promo indicated by <see cref="SubscriptionPromoName"/>.
+        /// </summary>
+        public int SubscriptionPromoCount => int.TryParse(TryGetTag("msg-param-promo-gift-total"),
+            out int value) ? value : 0;
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.subgift"/> notices.
+        /// The display name of the subscription gift recipient.
+        /// </summary>
+        public string RecipientDisplayName => TryGetTag("msg-param-recipient-display-name");
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.subgift"/> notices.
+        /// The user ID of the subscription gift recipient.
+        /// </summary>
+        public string RecipientId => TryGetTag("msg-param-recipient-id");
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.subgift"/> notices.
+        /// The user name of the subscription gift recipient.
+        /// </summary>
+        public string RecipientUsername => TryGetTag("msg-param-recipient-user-name");
+        /// <summary>
+        /// Only Included in <see cref="UserNoticeType.sub"/>, <see cref="UserNoticeType.resub"/>,
+        /// and <see cref="UserNoticeType.subgift"/>.
+        /// Either "msg-param-cumulative-months" or "msg-param-months" depending
+        /// on the notice type.
+        /// </summary>
+        public int TotalMonths
+        { get
+            {
+                var s1 = TryGetTag("msg-param-cumulative-months");
+                var s2 = TryGetTag("msg-param-months");
+                if (int.TryParse(s1, out int value1))
+                    return value1;
+                if (int.TryParse(s2, out int value2))
+                    return value2;
+                return 0;
+            }
+        }
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.sub"/> and <see cref="UserNoticeType.resub"/> notices.
+        /// A Boolean value that indicates whether the user wants their streaks shared.
+        /// Is "false" for other message types.
+        /// </summary>
+        public bool ShouldShareStreak => TryGetTag("msg-param-should-share-streak")
+            == "1" ? true : false;
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.sub"/> and <see cref="UserNoticeType.resub"/> notices.
+        /// The number of consecutive months the user has subscribed.
+        /// This is zero(0) if <see cref="ShouldShareStreak"/> is 0.
+        /// </summary>
+        public int StreakMonths => int.TryParse(TryGetTag("msg-param-streak-months"),
+            out int value) ? value : 0;
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.sub"/>, <see cref="UserNoticeType.resub"/>
+        /// and <see cref="UserNoticeType.subgift"/> notices.
+        /// </summary>
+        public SubType SubPlan
+        { get
+            {
+                switch (TryGetTag("msg-param-sub-plan").ToUpper())
+                {
+                    case "PRIME":
+                        return SubType.Prime;
+                    case "1000":
+                        return SubType.T1;
+                    case "2000":
+                        return SubType.T2;
+                    case "3000":
+                        return SubType.T3;
+                    default:
+                        return SubType.None;
+                }
+            }
+        }
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.sub"/>, <see cref="UserNoticeType.resub"/>,
+        /// and <see cref="UserNoticeType.subgift"/> notices.
+        /// The display name of the subscription plan. This may be a default name or one created
+        /// by the channel owner.
+        /// </summary>
+        public string SubPlanName => TryGetTag("msg-param-sub-plan-name");
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.raid"/> notices.
+        /// The number of viewers raiding this channel from the broadcaster’s channel.
+        /// </summary>
+        public int ViewerCount => int.TryParse(TryGetTag("msg-param-viewerCount"),
+            out int value) ? value : 0;
+        /// <summary>
+        /// The type of user sending the whisper message.
+        /// </summary>
         public UserType UserType
         { get
             {
                 if (!MessageTags.TryGetValue("user-type", out string? value))
-                    return UserType.Normal;
-                switch (value)
+                    return UserType.None;
+                switch (value.ToUpper())
                 {
-                    case "admin":
+                    case "ADMIN":
                         return UserType.Admin;
-                    case "global_mod":
+                    case "GLOBAL_MOD":
                         return UserType.GlobalMod;
-                    case "staff":
+                    case "STAFF":
                         return UserType.Staff;
-                    default:
+                    case "":
                         return UserType.Normal;
+                    default:
+                        throw new InvalidDataException();
                 }
             }
         }
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.ritual"/> notices.
+        /// The name of the ritual being celebrated.
+        /// </summary>
+        public RitualType RitualType => Enum.TryParse(TryGetTag("msg-param-ritual-name"),
+            out RitualType rt) ? rt : RitualType.None;
+        //TODO possibly deprecate and add an int version in the future if all tiers are numeric
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.bitsbadgetier"/> notices.
+        /// The tier of the Bits badge the user just earned. For example, 100, 1000, or 10000.
+        /// </summary>
+        public string Threshold => TryGetTag("msg-param-threshold");
+        /// <summary>
+        /// Included only with <see cref="UserNoticeType.subgift"/> notices.
+        /// The number of months gifted as part of a single, multi-month gift.
+        /// </summary>
+        public int GiftMonths => int.TryParse(TryGetTag("msg-param-gift-months"),
+            out int value) ? value : 0;
         public UserNotice(ReceivedMessage message) : base(message)
         {
             Debug.Assert(MessageType == IrcMessageType.USERNOTICE,
@@ -145,16 +307,31 @@ namespace TwitchIrcClient.IRC.Messages
     }
     public enum UserNoticeType
     {
-        sub,
-        resub,
-        subgift,
-        submysterygift,
-        giftpaidupgrade,
-        rewardgift,
-        anongiftpaidupgrade,
-        raid,
-        unraid,
-        ritual,
-        bitsbadgetier,
+        sub             = 0,
+        resub           = 1,
+        subgift         = 2,
+        submysterygift  = 3,
+        giftpaidupgrade = 4,
+        rewardgift      = 5,
+        anongiftpaidupgrade = 6,
+        raid            = 7,
+        unraid          = 8,
+        ritual          = 9,
+        bitsbadgetier   = 10,
+    }
+    public enum RitualType
+    {
+        new_chatter = 0,
+
+        None        = int.MinValue,
+    }
+    public enum SubType
+    {
+        Prime   = 0,
+        T1      = 1,
+        T2      = 2,
+        T3      = 3,
+
+        None    = int.MinValue,
     }
 }
