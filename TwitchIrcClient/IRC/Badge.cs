@@ -9,6 +9,6 @@ namespace TwitchIrcClient.IRC
 {
     public record struct Badge(string Name, string Version)
     {
-
+        
     }
 }

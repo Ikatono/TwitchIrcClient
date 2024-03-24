@@ -88,25 +88,27 @@ namespace TwitchIrcClient.IRC
             {
                 lock (Semaphore)
                 {
-                    Semaphore.Release(MessageLimit - Semaphore.CurrentCount);
+                    var count = MessageLimit - Semaphore.CurrentCount;
+                    if (count > 0)
+                        Semaphore.Release(count);
                 }
             }
-            catch (SemaphoreFullException)  { }
+            catch (SemaphoreFullException) { }
             catch (ObjectDisposedException) { }
         }
 
         #region RateLimiter Dispose
-        private bool disposedValue;
+        //https://stackoverflow.com/questions/8927878/what-is-the-correct-way-of-adding-thread-safety-to-an-idisposable-object
+        private int _disposedCount;
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (Interlocked.Increment(ref _disposedCount) == 1)
             {
                 if (disposing)
                 {
                     Semaphore?.Dispose();
                     Timer?.Dispose();
                 }
-                disposedValue = true;
             }
         }
 

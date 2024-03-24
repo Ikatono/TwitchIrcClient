@@ -85,9 +85,6 @@ namespace TwitchIrcClient.IRC.Messages
         public string Id => TryGetTag("id");
         public UserNoticeType? UserNoticeType => Enum.TryParse(TryGetTag("msg-id"), out UserNoticeType type)
             ? type : null;
-        /// <summary>
-        /// 
-        /// </summary>
         public string Login => TryGetTag("login");
         /// <summary>
         /// Whether the user is a moderator in this channel
@@ -263,21 +260,15 @@ namespace TwitchIrcClient.IRC.Messages
         public UserType UserType
         { get
             {
-                if (!MessageTags.TryGetValue("user-type", out string? value))
-                    return UserType.None;
-                switch (value.ToUpper())
+                var value = TryGetTag("user-type");
+                return value.ToUpper() switch
                 {
-                    case "ADMIN":
-                        return UserType.Admin;
-                    case "GLOBAL_MOD":
-                        return UserType.GlobalMod;
-                    case "STAFF":
-                        return UserType.Staff;
-                    case "":
-                        return UserType.Normal;
-                    default:
-                        throw new InvalidDataException();
-                }
+                    "ADMIN"      => UserType.Admin,
+                    "GLOBAL_MOD" => UserType.GlobalMod,
+                    "STAFF"      => UserType.Staff,
+                    ""           => UserType.Normal,
+                    _            => UserType.Normal,
+                };
             }
         }
         /// <summary>

@@ -52,7 +52,7 @@ async Task<IrcConnection> CreateConnection(string channel)
 Console.Write("Channel: ");
 var channelName = Console.ReadLine();
 ArgumentNullException.ThrowIfNull(channelName, nameof(Channel));
-var connection = CreateConnection(channelName);
+var connection = await CreateConnection(channelName);
 while (true)
 {
     //all the work happens in other threads
