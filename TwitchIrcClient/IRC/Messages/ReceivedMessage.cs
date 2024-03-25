@@ -96,19 +96,19 @@ namespace TwitchIrcClient.IRC.Messages
             }
             return message.MessageType switch
             {
-                IrcMessageType.CLEARCHAT => new ClearChat(message),
-                IrcMessageType.CLEARMSG => new ClearMsg(message),
-                IrcMessageType.JOIN => new Join(message),
+                IrcMessageType.CLEARCHAT    => new ClearChat(message),
+                IrcMessageType.CLEARMSG     => new ClearMsg(message),
+                IrcMessageType.JOIN         => new Join(message),
                 IrcMessageType.GLOBALUSERSTATE => new GlobalUserState(message),
-                IrcMessageType.HOSTTARGET => new HostTarget(message),
-                IrcMessageType.NOTICE => new Notice(message),
-                IrcMessageType.PART => new Part(message),
-                IrcMessageType.PRIVMSG => new Privmsg(message),
-                IrcMessageType.ROOMSTATE => new Roomstate(message),
+                IrcMessageType.HOSTTARGET   => new HostTarget(message),
+                IrcMessageType.NOTICE       => new Notice(message),
+                IrcMessageType.PART         => new Part(message),
+                IrcMessageType.PRIVMSG      => new Privmsg(message),
+                IrcMessageType.ROOMSTATE    => new Roomstate(message),
                 IrcMessageType.RPL_NAMREPLY => new NamReply(message),
-                IrcMessageType.USERNOTICE => new UserNotice(message),
-                IrcMessageType.USERSTATE => new UserState(message),
-                IrcMessageType.WHISPER => new Whisper(message),
+                IrcMessageType.USERNOTICE   => new UserNotice(message),
+                IrcMessageType.USERSTATE    => new UserState(message),
+                IrcMessageType.WHISPER      => new Whisper(message),
                 _ => message,
             };
         }

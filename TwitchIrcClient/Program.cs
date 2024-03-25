@@ -9,11 +9,9 @@ RateLimiter limiter = new(20, 30);
 bool ssl = true;
 async Task<IrcConnection> CreateConnection(string channel)
 {
-    IrcConnection connection;
-    if (ssl)
-        connection = new IrcConnection("irc.chat.twitch.tv", 6697, limiter, true, true);
-    else
-        connection = new IrcConnection("irc.chat.twitch.tv", 6667, limiter, true, false);
+    IrcConnection connection = ssl
+        ? connection = new IrcConnection("irc.chat.twitch.tv", 6697, limiter, true, true)
+        : connection = new IrcConnection("irc.chat.twitch.tv", 6667, limiter, true, false);
     connection.AddCallback(new MessageCallbackItem(
         (o, m) =>
         {
@@ -51,7 +49,7 @@ async Task<IrcConnection> CreateConnection(string channel)
 }
 Console.Write("Channel: ");
 var channelName = Console.ReadLine();
-ArgumentNullException.ThrowIfNull(channelName, nameof(Channel));
+ArgumentNullException.ThrowIfNullOrWhiteSpace(channelName, nameof(channelName));
 var connection = await CreateConnection(channelName);
 while (true)
 {

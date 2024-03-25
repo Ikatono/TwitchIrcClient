@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace TwitchIrcClient.IRC
 {
+    /// <summary>
+    /// Represents the "command" of an IRC message.
+    /// </summary>
     public enum IrcMessageType
     {
         //twitch standard messages
@@ -174,12 +177,26 @@ namespace TwitchIrcClient.IRC
     }
     public static class IrcMessageTypeHelper
     {
-        //parses a string that is either a numeric code or the command name
+        /// <summary>
+        /// Parses a string that is either a numeric code or the command name.
+        /// </summary>
+        /// <param name="s"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// The value range 000-999 is reserved for numeric commands, and will
+        /// be converted to a numeric string when forming a message.
+        /// </remarks>
         public static IrcMessageType Parse(string s)
         {
             if (int.TryParse(s, out int result))
                 return (IrcMessageType)result;
             return Enum.Parse<IrcMessageType>(s);
+        }
+        public static string ToCommand(this IrcMessageType type)
+        {
+            if ((int)type >= 0 && (int)type < 1000)
+                return $"{(int)type,3}";
+            return type.ToString();
         }
     }
 }

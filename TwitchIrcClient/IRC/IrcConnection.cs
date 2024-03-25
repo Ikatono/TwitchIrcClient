@@ -139,12 +139,52 @@ namespace TwitchIrcClient.IRC
             var bytes = Encoding.UTF8.GetBytes(line + ENDL);
             _Stream.Write(bytes, 0, bytes.Length);
         }
+        //TODO make this unit testable?
+        /// <summary>
+        /// Construct an IRC message from parts and sends it. Does little to no validation on inputs.
+        /// </summary>
+        /// <param name="command"></param>
+        /// <param name="parameters"></param>
+        /// <param name="tags"></param>
+        /// <param name="prefix"></param>
+        public void SendMessage(IrcMessageType command, IEnumerable<string>? parameters = null,
+            Dictionary<string, string?>? tags = null, string? prefix = null)
+        {
+            var message = "";
+            if (tags is not null && tags.Count != 0)
+            {
+                message = "@" + string.Join(';',
+                    tags.OrderBy(p => p.Key).Select(p => $"{p.Key}={EscapeTagValue(p.Value)}"))
+                    + " ";
+            }
+            if (prefix is not null && !string.IsNullOrWhiteSpace(prefix))
+                message += ":" + prefix + " ";
+            message += command.ToCommand() + " ";
+            if (parameters is not null && parameters.Any())
+            {
+                message += string.Join(' ', parameters.SkipLast(1));
+                message += " :" + parameters.Last();
+            }
+            SendLine(message);
+        }
+        private static string EscapeTagValue(string? s)
+        {
+            if (s is null)
+                return "";
+            return string.Join("", s.Select(c => c switch
+                {
+                    ';' => @"\:",
+                    ' ' => @"\s",
+                    '\\' => @"\\",
+                    '\r' => @"\r",
+                    '\n' => @"\n",
+                    char ch => ch.ToString(),
+                }));
+        }
         public void Authenticate(string? user, string? pass)
         {
-            if (user == null)
-                user = $"justinfan{Random.Shared.NextInt64(10000):D4}";
-            if (pass == null)
-                pass = "pass";
+            user ??= $"justinfan{Random.Shared.NextInt64(10000):D4}";
+            pass ??= "pass";
             SendLine($"NICK {user}");
             SendLine($"PASS {pass}");
         }
