@@ -162,8 +162,17 @@ namespace TwitchIrcClient.IRC
             message += command.ToCommand() + " ";
             if (parameters is not null && parameters.Any())
             {
-                message += string.Join(' ', parameters.SkipLast(1));
-                message += " :" + parameters.Last();
+                //if ((command == IrcMessageType.NICK || command == IrcMessageType.PASS)
+                //    && parameters.Count() == 1)
+                if (false)
+                {
+                    message += " " + parameters.Single();
+                }
+                else
+                {
+                    message += string.Join(' ', parameters.SkipLast(1));
+                    message += " :" + parameters.Last();
+                }
             }
             SendLine(message);
         }
@@ -185,13 +194,13 @@ namespace TwitchIrcClient.IRC
         {
             user ??= $"justinfan{Random.Shared.NextInt64(10000):D4}";
             pass ??= "pass";
-            SendLine($"NICK {user}");
-            SendLine($"PASS {pass}");
+            SendMessage(IrcMessageType.PASS, parameters: [pass]);
+            SendMessage(IrcMessageType.NICK, parameters: [user]);
         }
         public void JoinChannel(string channel)
         {
             channel = channel.TrimStart('#');
-            SendLine($"JOIN #{channel}");
+            SendMessage(IrcMessageType.JOIN, ["#" + channel]);
         }
         private async void ListenForInput()
         {
@@ -308,30 +317,36 @@ namespace TwitchIrcClient.IRC
         public void AddCallback(MessageCallbackItem callbackItem)
         {
             ObjectDisposedException.ThrowIf(disposedValue, this);
-            UserCallbacks.Add(callbackItem);
+            lock (UserCallbacks)
+                UserCallbacks.Add(callbackItem);
         }
         public bool RemoveCallback(MessageCallbackItem callbackItem)
         {
             ObjectDisposedException.ThrowIf(disposedValue, this);
-            return UserCallbacks.Remove(callbackItem);
+            lock (UserCallbacks)
+                return UserCallbacks.Remove(callbackItem);
         }
         protected void AddSystemCallback(MessageCallbackItem callbackItem)
         {
             ObjectDisposedException.ThrowIf(disposedValue, this);
-            SystemCallbacks.Add(callbackItem);
+            lock (SystemCallbacks)
+                SystemCallbacks.Add(callbackItem);
         }
         protected bool RemoveSystemCallback(MessageCallbackItem callbackItem)
         {
             ObjectDisposedException.ThrowIf(disposedValue, this);
-            return SystemCallbacks.Remove(callbackItem);
+            lock (SystemCallbacks)
+                return SystemCallbacks.Remove(callbackItem);
         }
         private void RunCallbacks(ReceivedMessage message)
         {
             ArgumentNullException.ThrowIfNull(message, nameof(message));
-                if (disposedValue)
+            if (disposedValue)
                 return;
-            SystemCallbacks.ForEach(c => c.TryCall(this, message));
-            UserCallbacks.ForEach(c => c.TryCall(this, message));
+            lock (SystemCallbacks)
+                SystemCallbacks.ForEach(c => c.TryCall(this, message));
+            lock (UserCallbacks)
+                UserCallbacks.ForEach(c => c.TryCall(this, message));
         }
 
         #region Dispose
@@ -346,6 +361,7 @@ namespace TwitchIrcClient.IRC
                     TokenSource.Dispose();
                     Client?.Dispose();
                     _HeartbeatTimer?.Dispose();
+                    _Stream?.Dispose();
                 }
                 disposedValue = true;
             }
