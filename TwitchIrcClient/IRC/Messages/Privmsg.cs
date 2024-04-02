@@ -15,6 +15,27 @@ namespace TwitchIrcClient.IRC.Messages
     public class Privmsg : ReceivedMessage
     {
         /// <summary>
+        /// Contains metadata related to the chat badges in the badges tag.
+        /// According to Twitch's documentation this should only include info about
+        /// subscription length, but it also contains prediction info and who knows what else.
+        /// </summary>
+        public IEnumerable<string> BadgeInfo => TryGetTag("badge-info").Split(',');
+        /// <summary>
+        /// Contains the total number of months the user has subscribed, even if they aren't
+        /// subscribed currently.
+        /// </summary>
+        public int SubscriptionLength
+        { get
+            {
+                //TODO redo this, functional style clearly didn't work here
+                if (int.TryParse((BadgeInfo.FirstOrDefault(
+                    b => b.StartsWith("SUBSCRIBER", StringComparison.CurrentCultureIgnoreCase)) ?? "")
+                    .Split("/", 2).ElementAtOrDefault(1) ?? "", out int value))
+                    return value;
+                return 0;
+            }
+        }
+        /// <summary>
         /// List of chat badges. Most badges have only 1 version, but some badges like
         /// subscriber badges offer different versions of the badge depending on how
         /// long the user has subscribed. To get the badge, use the Get Global Chat

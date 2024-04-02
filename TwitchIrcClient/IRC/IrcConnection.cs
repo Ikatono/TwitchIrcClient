@@ -13,7 +13,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using TwitchIrcClient.IRC.Messages;
-using TwitchIrcClient.IRC.Messages;
 
 namespace TwitchIrcClient.IRC
 {
