@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace TwitchIrcClientTests
 {
     [TestClass]
-    public class ParserTest
+    public class IrcParserTest
     {
         [TestMethod]
         public void TestRoomstate()
